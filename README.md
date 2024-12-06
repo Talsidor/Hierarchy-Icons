@@ -23,7 +23,7 @@ Note: Hierarchy Icons' Settings are saved only for the local user (via Editor Pr
   a. All Components,
   b. just Components that inherit from Behaviour,
   c. just Components that inherit from MonoBehaviour, or
-  d. Disable Hierarchy Icons
+  d. Disable the Hierarchy Icons plugin completely
 
 ![image](https://github.com/user-attachments/assets/db9e805c-16e1-4a16-bb76-f58ed8e18667)
 
