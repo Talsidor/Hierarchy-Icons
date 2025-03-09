@@ -66,11 +66,11 @@ public static class ShowScriptIconsInHierarchy
             return;
         }
 
-        var gameObj = GameObject.Find(obj.name);
+		var gameObj = obj as GameObject;
 
         if (!gameObj)
         {
-            //Debug.LogError($"No gameObject could be found with name '{obj.name}'");
+            Debug.LogError($"obj '{obj.name}' is not a GameObject");
             return;
         }
 
