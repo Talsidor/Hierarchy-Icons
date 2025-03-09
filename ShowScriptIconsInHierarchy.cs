@@ -1,6 +1,7 @@
 
 using UnityEditor;
 using UnityEngine;
+
 using System;
 using System.Linq;
 
@@ -16,6 +17,8 @@ public static class ShowScriptIconsInHierarchy
 
 	const string _editorPref_displayLevel = "_hierarchyIcons_displayLevel";
     const string _editorPref_overlapping = "_hierarchyIcons_overlapping";
+	const string _editorPref_static = "_hierarchyIcons_static";
+	const string _editorPref_bakedLights = "_hierarchyIcons_bakedLights";
 
 	#endregion EDITOR PREF NAME CONSTS
 
@@ -25,6 +28,8 @@ public static class ShowScriptIconsInHierarchy
     const string _menuItem_levelPrefix = _menuItem_prefix + "Set Level to.../";
 
 	const string _menuItem_overlap = _menuItem_prefix + "Overlap Repeating Icons";
+	const string _menuItem_static = _menuItem_prefix + "Show Static Editor Flags";
+	const string _menuItem_bakedLights = _menuItem_prefix + "Show if a Light's Mode is set to Baked";
 
 	const string _menuItem_level0 = _menuItem_levelPrefix + "0. None";
 	const string _menuItem_level1 = _menuItem_levelPrefix + "1. Only MonoBehaviours";
@@ -44,17 +49,28 @@ public static class ShowScriptIconsInHierarchy
     static DisplayLevel _displayLevel;
     const DisplayLevel _defaultDisplayLevel = DisplayLevel.AllComponents;
 
-    static bool _overlapping = true;
+    static bool _overlapping;
+	static bool _showStatic;
+	static bool _showBakedLights;
 
-    static ShowScriptIconsInHierarchy()
+	static Texture _bakedIcon;
+
+	static ShowScriptIconsInHierarchy()
     {
-        GetDisplayLevel();
-        GetOverlapping();
+		GetAllEditorPrefs();
 
         UpdateMenuItemCheckedStatuses();
 
         EditorApplication.hierarchyWindowItemOnGUI += HandleHierarchyWindowItemOnGUI;
     }
+
+	static void GetAllEditorPrefs()
+	{
+		GetDisplayLevel();
+		GetOverlapping();
+		GetShowStatic();
+		GetShowBakedLights();
+	}
 
     static void HandleHierarchyWindowItemOnGUI(int instanceID, Rect selectionRect)
     {
@@ -108,7 +124,7 @@ public static class ShowScriptIconsInHierarchy
         {
             var content = EditorGUIUtility.ObjectContent(component, typeof(T));
 
-            if (_overlapping &&
+			if (_overlapping &&
                 content.image == lastIcon)
             {
                 offset += (size / 3);
@@ -123,10 +139,49 @@ public static class ShowScriptIconsInHierarchy
             GUI.DrawTexture(rect, content.image);
 
             lastIcon = content.image;
+
+			if (_showBakedLights && 
+				component is Light light &&
+				light.lightmapBakeType == LightmapBakeType.Baked)
+			{
+				if (_bakedIcon == null)
+				{
+					_bakedIcon = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.talsidor.hierarchy-icons/cake-24px.png");
+				}
+
+				offset += 12;
+				rect = new Rect(selectionRect.xMax - offset, selectionRect.yMin, size, size);
+				GUI.DrawTexture(rect, _bakedIcon);
+			}
         }
+
+		if (_showStatic)
+		{
+			offset += size;
+
+			var rect = new Rect(selectionRect.xMax - offset + 2, selectionRect.yMin + 2, 11, 11);
+
+			DrawStaticStatus(gameObj, rect);
+		}
+	}
+
+	static void DrawStaticStatus(GameObject gameObj, Rect selectionRect)
+	{
+		const StaticEditorFlags allUsedFlags = (StaticEditorFlags) 0b_1110_1010;
+
+		StaticEditorFlags flags = GameObjectUtility.GetStaticEditorFlags(gameObj);
+
+		if (flags.HasFlag(allUsedFlags))
+		{
+			GUI.DrawTexture(selectionRect, EditorGUIUtility.IconContent("LockIcon-On").image);
+		} 
+        else if (flags > 0)
+        {
+			GUI.DrawTexture(selectionRect, EditorGUIUtility.IconContent("LockIcon").image);
+		}
     }
 
-    #region Editor Pref & Menu Items
+    #region Menu Items
 
     static void UpdateMenuItemCheckedStatuses()
     {
@@ -136,7 +191,9 @@ public static class ShowScriptIconsInHierarchy
         Menu.SetChecked(_menuItem_level3, _displayLevel == DisplayLevel.AllComponents);
 
         Menu.SetChecked(_menuItem_overlap, _overlapping);
-    }
+		Menu.SetChecked(_menuItem_static, _showStatic);
+		Menu.SetChecked(_menuItem_bakedLights, _showBakedLights);
+	}
 
     [MenuItem(_menuItem_level0)]
     static void SetDisplayLevel_0()
@@ -168,7 +225,23 @@ public static class ShowScriptIconsInHierarchy
         SetOverlapping(!_overlapping);
     }
 
-    static void SetDisplayLevel(DisplayLevel displayLevel)
+	[MenuItem(_menuItem_static)]
+	static void ToggleShowStatic()
+	{
+		SetShowStatic(!_showStatic);
+	}
+
+	[MenuItem(_menuItem_bakedLights)]
+	static void ToggleShowBakedLights()
+	{
+		SetShowStatic(!_showBakedLights);
+	}
+
+	#endregion Menu Items
+
+	#region Editor Prefs
+
+	static void SetDisplayLevel(DisplayLevel displayLevel)
     {
         _displayLevel = displayLevel;
 
@@ -198,22 +271,56 @@ public static class ShowScriptIconsInHierarchy
     static void SetOverlapping(bool newState)
     {
         _overlapping = newState;
-
-        EditorPrefs.SetBool(_editorPref_overlapping, _overlapping);
-
-        UpdateMenuItemCheckedStatuses();
-
-        RepaintAllHierarchyWindows();
+		SetEditorPref(_editorPref_overlapping, newState);
     }
 
     static bool GetOverlapping()
     {
-        var overlapping = EditorPrefs.GetBool(_editorPref_overlapping, true);
+        var value = EditorPrefs.GetBool(_editorPref_overlapping, true);
         
-        _overlapping = overlapping;
+        _overlapping = value;
         
-        return overlapping;
+        return value;
     }
+
+	static void SetShowStatic(bool newState)
+	{
+		_showStatic = newState;
+		SetEditorPref(_editorPref_static, newState);
+	}
+
+	static bool GetShowStatic()
+	{
+		var value = EditorPrefs.GetBool(_editorPref_static, true);
+
+		_showStatic = value;
+
+		return value;
+	}
+
+	static void SetShowBakedLights(bool newState)
+	{
+		_showBakedLights = newState;
+		SetEditorPref(_editorPref_bakedLights, newState);
+	}
+
+	static bool GetShowBakedLights()
+	{
+		var value = EditorPrefs.GetBool(_editorPref_bakedLights, false);
+
+		_showBakedLights = value;
+
+		return value;
+	}
+
+	static void SetEditorPref(string key, bool value)
+	{
+		EditorPrefs.SetBool(key, value);
+
+		UpdateMenuItemCheckedStatuses();
+
+		RepaintAllHierarchyWindows();
+	}
 
     static void RepaintAllHierarchyWindows()
     {

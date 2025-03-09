@@ -33,3 +33,17 @@ Note: Hierarchy Icons' Settings are saved only for the local user (via Editor Pr
 2. You can disable this by un-ticking `Tools > Hierarchy Icons > Overlap Repeating Icons`
 
 ![image](https://github.com/user-attachments/assets/b01d25e2-1845-4a19-a5c2-8d4385e57931)
+
+### Show if a Light's Mode is set to Baked
+
+If enabled, an icon of a birthday cake will be shown next to the icon for Light components if their [LightmapBakeType](https://docs.unity3d.com/ScriptReference/Light-lightmapBakeType.html) is set to Baked.
+
+Off by default.
+
+### Show Static Editor Flags
+
+If enabled, a lock icon will be shown on objects that have any of their [Static Editor Flags](https://docs.unity3d.com/ScriptReference/StaticEditorFlags.html) raised.
+
+The lock will be fully locked if all the flags are raised, and slightly open if only some are raised.
+
+On by default.

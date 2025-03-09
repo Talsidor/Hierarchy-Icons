@@ -1,6 +1,6 @@
 {
   "name": "com.talsidor.hierarchy-icons",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "displayName": "Hierarchy Icons",
   "description": "Unity Plugin to show component icons next to each object in the Unity Hierarchy",
   "unity": "2019.1",
